@@ -12,7 +12,7 @@ import * as path from "node:path"
 
 export interface CliTestFixture {
   tmpDir: string
-  runCommand: (command: string) => Promise<{ stdout: string; stderr: string }>
+  runCommand: (command: string) => Promise<{ stdout: string; stderr: string; exitCode: number }>
   registryServer: any
   registryDb: DbClient
   registryApiUrl: string
@@ -129,7 +129,7 @@ export async function getCliTestFixture(
       task.exited,
     ])
 
-    return { stdout, stderr }
+    return { stdout, stderr, exitCode: task.exitCode ?? 0 }
   }
 
   // Setup cleanup
