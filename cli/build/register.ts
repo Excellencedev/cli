@@ -3,6 +3,7 @@ import path from "node:path"
 import fs from "node:fs"
 import { buildFile } from "./build-file"
 import { getBuildEntrypoints } from "./get-build-entrypoints"
+import { validateDependencies } from "lib/dependency-analysis/validateDependencies"
 
 export const registerBuild = (program: Command) => {
   program
@@ -23,6 +24,16 @@ export const registerBuild = (program: Command) => {
       ) => {
         const { projectDir, mainEntrypoint, circuitFiles } =
           await getBuildEntrypoints({ fileOrDir: file })
+
+        // Validate dependencies before building
+        const validationErrors = validateDependencies(circuitFiles, projectDir)
+        if (validationErrors.length > 0) {
+          console.error("❌ Dependency validation errors:")
+          for (const error of validationErrors) {
+            console.error(`  ${error.file}: ${error.message}`)
+          }
+          process.exit(1)
+        }
 
         const distDir = path.join(projectDir, "dist")
         fs.mkdirSync(distDir, { recursive: true })

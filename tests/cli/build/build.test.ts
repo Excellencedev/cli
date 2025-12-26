@@ -77,3 +77,30 @@ test("build without file builds circuit and board files", async () => {
   )
   expect(boardComponent.name).toBe("R1")
 })
+
+test("build fails when dependency is in devDependencies but imported", async () => {
+  const { tmpDir, runCommand } = await getCliTestFixture()
+  const circuitPath = path.join(tmpDir, "test.circuit.tsx")
+  const circuitCodeWithImport = `
+import React from "react"
+export default () => (
+  <board width="10mm" height="10mm">
+    <resistor resistance="1k" footprint="0402" name="R1" schX={3} pcbX={3} />
+  </board>
+)`
+  await writeFile(circuitPath, circuitCodeWithImport)
+  await writeFile(path.join(tmpDir, "package.json"), JSON.stringify({
+    name: "test",
+    devDependencies: {
+      "react": "^18.0.0"
+    }
+  }))
+
+  const result = await runCommand(`tsci build`)
+
+  expect(result.exitCode).toBe(1)
+  expect(result.stderr).toContain("Dependency validation errors")
+  expect(result.stderr).toContain("react")
+  expect(result.stderr).toContain("devDependencies")
+  expect(result.stderr).toContain("Move it to dependencies")
+})
